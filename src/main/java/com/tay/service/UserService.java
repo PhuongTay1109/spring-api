@@ -2,6 +2,8 @@ package com.tay.service;
 
 import java.util.List;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.tay.dto.request.UserCreationRequest;
@@ -30,6 +32,12 @@ public class UserService {
 		}
 
 		User user = userMapper.toUser(request);
+		
+		// BCrypt là 1 implementation của PasswordEncoder
+		// PasswordEncoder là 1 interface của Spring Security cung cấp để các thuật toán implement
+		// số càng lớn thì càng mạnh nhưng đánh đổi lại thời gian
+		PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+		user.setPassword(passwordEncoder.encode(user.getPassword()));
 
 		return userRepository.save(user);
 
