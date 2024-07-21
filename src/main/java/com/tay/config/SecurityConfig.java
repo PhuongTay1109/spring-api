@@ -1,7 +1,5 @@
 package com.tay.config;
 
-import javax.crypto.spec.SecretKeySpec;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,36 +9,36 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer.JwtConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 	
 	private final String[] PUBLIC_ENDPOINTS = {
-			"/users", "/auth/**"			
+			"/users", "/auth/**"		
 	};
 	
 	@Value("${jwt.signerKey}")
 	private String signerKey;
 	
+	@Autowired
+	private CustomJwtDecoder customJwtDecoder;
+	
+	// khi token được giải mã rồi, các thông tin ở trong token đó sẽ tự động được lưu
+	// vào trong authentication trong Security Context
+	// bên SecurityConfig khi thêm .hasAuthority sẽ tự động so sánh với authorities trong authentication
+	// để cho phép truy cập endpoint hay không
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
 			.csrf(AbstractHttpConfigurer::disable)
 			.authorizeHttpRequests(request ->
 					request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+							//.requestMatchers(HttpMethod.GET, "/users").hasAnyAuthority("ROLE_ADMIN") => phân quyền trên endpoint, còn có phân quyền trên method nữa
 					.anyRequest().authenticated());
 		
 		// khi config oauth2 resource server
@@ -48,23 +46,25 @@ public class SecurityConfig {
 		// tức là khi thực hiện 1 request mà cung cấp token vào header Authentication
 		// thì sẽ được đưa cho provider này thực hiện authentication
 		http.oauth2ResourceServer(oauth2 ->
-			oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()))
+			oauth2.jwt(jwtConfigurer -> 
+						jwtConfigurer.decoder(customJwtDecoder)
+									.jwtAuthenticationConverter(jwtAuthenticationConverter()))
 		);
 		
 		return http.build();
 	}
 	
-	
-	// cung cấp cho Spring 1 cái decoder
-	// AuthenticationProvider sẽ dùng decoder này để decode cái token
+	// mặc định JwtAuthenticationManager sẽ map các scope trong jwt 
+	// và đặt prefix là SCOPE_
+	// customize prefix từ SCOPE_ về lại ROLE_
 	@Bean
-	JwtDecoder jwtDecoder() {
-		SecretKeySpec secretKeySpec = new SecretKeySpec(signerKey.getBytes(), "HS512");
-		return NimbusJwtDecoder
-				.withSecretKey(secretKeySpec)
-				.macAlgorithm(MacAlgorithm.HS512)
-				.build();
+	JwtAuthenticationConverter jwtAuthenticationConverter() {
+		JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+		jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
 		
+		JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+		jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
+		
+		return jwtAuthenticationConverter;
 	}
-
 }

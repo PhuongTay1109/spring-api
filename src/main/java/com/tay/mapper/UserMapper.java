@@ -13,9 +13,14 @@ import com.tay.model.User;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
+	@Mapping(target = "id", ignore = true)
+    @Mapping(target = "roles", ignore = true)
 	User toUser(UserCreationRequest request);
 	
 	// define là mapping từ request sang user
+	@Mapping(target = "roles", ignore = true)
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "username", ignore = true)
 	void updateUser(@MappingTarget User user, UserUpdateRequest request);
 	
 	//@Mapping(target = "lastName", ignore = true)

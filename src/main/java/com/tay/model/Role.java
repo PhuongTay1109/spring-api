@@ -1,11 +1,8 @@
 package com.tay.model;
 
-import java.time.LocalDate;
 import java.util.Set;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import lombok.AllArgsConstructor;
@@ -20,18 +17,13 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class User {
-
+public class Role {
+	
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
-	private String id;
-	private String username;
-	private String password;
-	private String firstName;
-	private String lastName;
-	private LocalDate dob; // date of birth
+	private String name;
+	private String description;
 	
 	@ManyToMany
-	Set<Role> roles;
-
+	Set<Permission> permissions;
 }
+

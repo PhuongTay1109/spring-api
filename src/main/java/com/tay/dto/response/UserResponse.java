@@ -1,6 +1,7 @@
 package com.tay.dto.response;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,5 +22,6 @@ public class UserResponse {
 	private String firstName;
 	private String lastName;
 	private LocalDate dob; // date of birth
+	Set<RoleResponse> roles;
 	
 }
